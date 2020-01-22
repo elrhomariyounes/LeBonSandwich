@@ -23,6 +23,9 @@ $c = new \Slim\Container($config);
 
 $app = new \Slim\App($c);
 
-$app->get('/Order[/{id}]', "\lbs\command\control\OrderController:GetOrders")->setName('orders');
+$app->get('/Orders', "\lbs\command\control\OrderController:GetOrders")->setName('orders');
+$app->get('/Orders/{id}', "\lbs\command\control\OrderController:GetOrder")->setName('order');
+$app->post('/Orders',"\lbs\command\control\OrderController:AddOrder");
+
 
 $app->run();
