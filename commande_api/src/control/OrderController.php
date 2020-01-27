@@ -6,6 +6,12 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
 class OrderController{
+    protected $_container;
+
+    public function __construct(\Slim\Container $container=null )
+    {
+        $this->_container = $container;
+    }
 
     /*
      * Get all the orders
@@ -14,14 +20,11 @@ class OrderController{
     public function GetOrders(Request $rq, Response $rs, $args)
   {
         try{
-            $bddResults = Order::select("id","mail","created_at","montant")->get();
-            $commandes = ["type"=>"collection","count"=>count($bddResults),"commandes"=>[]];
-            foreach ($bddResults as $commande) {
-                array_push($commandes["commandes"],$commande);
-            }
+            $orders = Order::select("id","mail","created_at","montant")->get();
+            $result = ["type"=>"collection","count"=>count($orders),"commandes"=>$orders];
             $rs= $rs->withStatus(200);
             $rs = $rs->withHeader('Content-type', 'application/json');
-            $rs->getBody()->write(json_encode($commandes));
+            $rs->getBody()->write(json_encode($result));
             return $rs;
         }catch(\Exception $e){
             $error = ["type"=>"error","error"=>500,"message"=>"Internal Server ".$e->getMessage()];
@@ -43,7 +46,7 @@ class OrderController{
    *
    */
     public function GetOrder(Request $rq, Response $rs, $args){
-        //Test if is a POST Method
+        //Test if is a POST Method then Not Allowed
         if($rq->getMethod()==="POST"){
             $error = ["type"=>"error","error"=>405,"message"=>"Not Allowed Method"];
             $rs->getBody()->write(json_encode($error));
@@ -54,11 +57,10 @@ class OrderController{
         //Get by Id
         if(isset($args["id"])){
             try{
-//          select("id","mail","created_at","montant")->where("id","=",$args["id"])->firstOrFail();
-                $bddResults = Order::find($args["id"]);
+                $order = Order::find($args["id"]);
 
                 //Test if the Order is found
-                if($bddResults===null){
+                if($order===null){
                     $error = ["type"=>"error","error"=>404,"message"=>"Order not found"];
                     $rs->getBody()->write(json_encode($error));
                     $rs= $rs->withStatus(404);
@@ -66,9 +68,8 @@ class OrderController{
                     return $rs;
                 }
 
-                $commande = ["type"=>"collection","count"=>1,"commandes"=>[]];
-                array_push($commande["commandes"],$bddResults);
-                $rs->getBody()->write(json_encode($commande));
+                $result = ["type"=>"collection","count"=>1,"commande"=>$order];
+                $rs->getBody()->write(json_encode($result));
                 $rs= $rs->withStatus(200);
                 $rs = $rs->withHeader('Content-type', 'application/json');
                 return $rs;
@@ -88,24 +89,23 @@ class OrderController{
         $rs = $rs->withHeader('Content-type', 'application/json');
         return $rs;
     }
-
-
+    /*
+     * Method that Add an Order
+     *
+     */
     public function AddOrder(Request $rq, Response $rs, $args){
-        //nom,mail,date_livraison
         $parsedBody = $rq->getParsedBody();
         if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison'])){
             try {
                 $order = new Order();
                 $order->id=Uuid::uuid4();
-                $order->nom=$parsedBody['nom'];
-                $order->mail=$parsedBody['mail'];
+                $order->nom=filter_var($parsedBody['nom'],FILTER_SANITIZE_STRING);
+                $order->mail=filter_var($parsedBody['mail'],FILTER_SANITIZE_EMAIL);
                 $order->livraison=$parsedBody['livraison'];
                 $order->created_at=date("Y-m-d H:i:s");
-                $order->save();
-                $rs->getBody()->write(json_encode($order));
-                $rs=$rs->withStatus(201)->withHeader('Content-type','application/json');
-                //TODO REDIRECT NOT WORKING
-//                $rs=$rs->withRedirect()
+                $order->saveOrFail();
+                $rs=$rs->withStatus(201)->withHeader('Content-type','application/json')->withAddedHeader('Location',"/Orders/$order->id");
+                $rs->getBody()->write(json_encode(["type"=>"collection","count"=>1,"commande"=>$order]));
                 return $rs;
             }
             catch(\Exception $e){
@@ -114,6 +114,51 @@ class OrderController{
                 $rs = $rs->withStatus(500);
                 $rs = $rs->withHeader('Content-type', 'application/json');
                 return $rs;
+            }
+        }
+
+        $error = ["type"=>"error","error"=>400,"message"=>"Bad Request !!, Please verify the inputs"];
+        $rs->getBody()->write(json_encode($error));
+        $rs = $rs->withStatus(400);
+        $rs = $rs->withHeader('Content-type', 'application/json');
+        return $rs;
+    }
+    /*
+     * Method that Update an Order
+     *
+     */
+    public function UpdateOrder(Request $rq, Response $rs, $args){
+        if(isset($args["id"])){
+            //Get the Order
+            $order = Order::find($args["id"]);
+
+            //Return Order Not Found if there is no Order with this id
+            if($order===null){
+                $error = ["type"=>"error","error"=>404,"message"=>"Order not found"];
+                $rs->getBody()->write(json_encode($error));
+                $rs= $rs->withStatus(404);
+                $rs = $rs->withHeader('Content-type', 'application/json');
+                return $rs;
+            }
+
+            $parsedBody = $rq->getParsedBody();
+            if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison'])){
+                try{
+                    //Update the Order and Ok Response
+                    $order->nom=filter_var($parsedBody['nom'],FILTER_SANITIZE_STRING);
+                    $order->mail=filter_var($parsedBody['mail'],FILTER_SANITIZE_EMAIL);
+                    $order->livraison=$parsedBody['livraison'];
+                    $order->saveOrFail();
+                    $rs=$rs->withStatus(200)->withHeader('Content-type','application/json');
+                    $rs->getBody()->write(json_encode(["type"=>"collection","count"=>1,"commande"=>$order]));
+                    return $rs;
+                }catch (\Exception $e){
+                    $error = ["type"=>"error","error"=>500,"message"=>"Internal Server ".$e->getMessage()];
+                    $rs->getBody()->write(json_encode($error));
+                    $rs = $rs->withStatus(500);
+                    $rs = $rs->withHeader('Content-type', 'application/json');
+                    return $rs;
+                }
             }
         }
 

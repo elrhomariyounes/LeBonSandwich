@@ -1,31 +1,23 @@
 <?php
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
-
+use \lbs\command\Helpers\DataBaseHelper;
+use \lbs\command\control\OrderController;
 require '../src/vendor/autoload.php';
 
-$db = new \Illuminate\Database\Capsule\Manager();
+//Require settings files for Slim Container
+$settings = require_once "../src/conf/GlobalSettings.php";
+$errorHandlers=require_once "../src/conf/errorHandlers.php";
 
-$array = parse_ini_file("../src/conf/config.ini");
-
-$db->addConnection($array);
-$db->setAsGlobal();
-$db->bootEloquent();
-
-$config = [
-    'settings' => [
-        'displayErrorDetails' => true,
-    ]
-];
-
+//Slim container Config
+$config = array_merge($settings,$errorHandlers);
 $c = new \Slim\Container($config);
-
-
 $app = new \Slim\App($c);
 
-$app->get('/Orders', "\lbs\command\control\OrderController:GetOrders")->setName('orders');
-$app->get('/Orders/{id}', "\lbs\command\control\OrderController:GetOrder")->setName('order');
-$app->post('/Orders',"\lbs\command\control\OrderController:AddOrder");
+//Start Eloquent Connection
+DataBaseHelper::ConnectToDatabase($app->getContainer()->settings['dbConf']);
 
+$app->get('/Orders', OrderController::class.':GetOrders')->setName('orders');
+$app->get('/Orders/{id}', OrderController::class.':GetOrder')->setName('order');
+$app->post('/Orders',OrderController::class.':AddOrder');
+$app->put('/Orders/{id}',OrderController::class.':UpdateOrder');
 
 $app->run();
