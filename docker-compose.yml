@@ -50,6 +50,23 @@ services:
     links :
       - mongo.cat:dbcat
 
+  api.suivicommande:
+    image: canals/php:latest
+    environment:
+      - VHOST_HOSTNAME=api.suivicommande.local
+      - VHOST_DOCROOT=/var/www/api
+    ports:
+      - "19280:80"
+      - "19243:443"
+    volumes:
+      - ./suivi_commande_api/api:/var/www/api
+      - ./suivi_commande_api/src:/var/www/src
+    working_dir: /var/www/src
+    networks:
+      - lbs.net
+    links:
+      - mysql.commande:dbcom
+
 
 #############################
 # mysql commande  + adminer
