@@ -11,7 +11,7 @@ class OrderController
     public function __construct(\Slim\Container $container){
         $this->_container=$container;
     }
-    public static function GetOrders(Request $rq, Response $rs, $args){
+    public function GetOrders(Request $rq, Response $rs, $args){
         //Get the count of the collection
         $count =count(Order::all());
         $state=1;
@@ -27,7 +27,7 @@ class OrderController
 
         //Invalid inputs
         if($page<1 || $page > ($count/$size)+1 || $size<1 || $size>$count){
-            $rs = $rs->withStatus(400)->withHeader('Content-Type','application/json');
+            $rs = $rs->withStatus(400)->withHeader('Content-type','application/json');
             $rsp = ["type"=>"error","error"=>400,"message"=>"Bad Request Page or Size Invalid !!"];
             $rs->getBody()->write(json_encode($rsp));
             return $rs;
@@ -65,7 +65,7 @@ class OrderController
             "orders"=>$orders
         ];
 
-        $rs = $rs->withStatus(200)->withHeader('Content-Type','application/json;charset=utf-8');
+        $rs = $rs->withStatus(200)->withHeader('Content-type','application/json;charset=utf-8');
         $rs->getBody()->write(json_encode($result));
     }
 }

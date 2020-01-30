@@ -1,3 +1,12 @@
 {
-
+  "require" : {
+    "php": ">=7.2",
+    "slim/slim": "^3.0",
+    "mongodb/mongodb": "^1.5"
+  },
+  "autoload": {
+    "psr-4" : {
+      "lbs\\catalogue\\" : "."
+    }
+  }
 }

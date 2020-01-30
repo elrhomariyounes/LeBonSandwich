@@ -15,7 +15,7 @@
             },
         "categories": [ "traditionnel","chaud"],
         "prix": {
-                    "$numberDecimal": "6.00"
+                    "numberDecimal": "6.00"
                 }
 
     },
@@ -35,7 +35,7 @@
             },
         "categories": [ "bio", "traditionnel" ],
         "prix": {
-                    "$numberDecimal": "4.50"
+                    "numberDecimal": "4.50"
                 }
     },
     {
@@ -54,7 +54,7 @@
             },
         "categories": [ "chaud", "world" ],
         "prix": {
-                    "$numberDecimal": "6.50"
+                    "numberDecimal": "6.50"
                 }
     },
     {
@@ -73,7 +73,7 @@
             },
         "categories": [ "bio", "traditionnel" ],
         "prix": {
-                    "$numberDecimal": "5.75"
+                    "numberDecimal": "5.75"
                 }
     },
     {
@@ -92,7 +92,7 @@
             },
         "categories": [ "bio", "traditionnel"],
         "prix": {
-                    "$numberDecimal": "5.25"
+                    "numberDecimal": "5.25"
                 }
     },
     {
@@ -111,7 +111,7 @@
             },
         "categories": [ "chaud", "world" ],
         "prix": {
-                    "$numberDecimal": "6.00"
+                    "numberDecimal": "6.00"
                 }
     },
     {
@@ -130,7 +130,7 @@
             },
         "categories": [ "traditionnel", "veggie" ],
         "prix": {
-                    "$numberDecimal": "6.00"
+                    "numberDecimal": "6.00"
                 }
     }
 ]
