@@ -15,7 +15,7 @@ $app = new \Slim\App($c);
 //Start Eloquent Connection
 DataBaseHelper::ConnectToDatabase($app->getContainer()->settings['dbConf']);
 
-$app->get('/Orders', OrderController::class.':GetOrders')->setName('orders');
+$app->get('/Orders[/]', OrderController::class.':GetOrders')->setName('orders');
 
-
+$app->get('/Orders/{id}[/]',OrderController::class.':GetOrderById')->setName('order');
 $app->run();
