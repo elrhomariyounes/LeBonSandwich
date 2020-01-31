@@ -68,7 +68,7 @@ class OrderController{
                     return $rs;
                 }
 
-                $result = ["type"=>"collection","count"=>1,"commande"=>$order];
+                $result = ["type"=>"resource","count"=>1,"commande"=>$order];
                 $rs->getBody()->write(json_encode($result));
                 $rs= $rs->withStatus(200);
                 $rs = $rs->withHeader('Content-type', 'application/json');
