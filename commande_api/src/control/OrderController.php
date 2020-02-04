@@ -94,9 +94,11 @@ class OrderController{
      *
      */
     public function AddOrder(Request $rq, Response $rs, $args){
+        //Get Parsed Body
         $parsedBody = $rq->getParsedBody();
         if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison'])){
             try {
+                //Creating the order and saving it
                 $order = new Order();
                 $order->id=Uuid::uuid4();
                 $order->nom=filter_var($parsedBody['nom'],FILTER_SANITIZE_STRING);
@@ -104,8 +106,36 @@ class OrderController{
                 $order->livraison=$parsedBody['livraison'];
                 $order->created_at=date("Y-m-d H:i:s");
                 $order->saveOrFail();
-                $rs=$rs->withStatus(201)->withHeader('Content-type','application/json')->withAddedHeader('Location',"/Orders/$order->id");
-                $rs->getBody()->write(json_encode(["type"=>"collection","count"=>1,"commande"=>$order]));
+
+                //Format livraison date
+                $fullLivraisonDate = new DateTime($order->livraison);
+                $date = $fullLivraisonDate->format('Y-m-d');
+                $time = $fullLivraisonDate->format('H:i:s');
+
+                //Generate Token
+                $token = openssl_random_pseudo_bytes(32);
+                $token = bin2hex($token);
+
+                //Return the response
+                $responseObject = [
+                    "commande"=>[
+                        "nom"=>$order->nom,
+                        "mail"=>$order->mail,
+                        "livraison"=>[
+                            "date"=>$date,
+                            "heure"=>$time
+                        ]
+                    ],
+                    "id"=>$order->id,
+                    "token"=>$token,
+                    "montant"=>$order->montant
+                ];
+
+                $rs=$rs->withStatus(201)
+                        ->withHeader('Content-type','application/json')
+                        ->withAddedHeader('Location',"/Orders/$order->id");
+                $rs->getBody()->write(json_encode($responseObject));
+
                 return $rs;
             }
             catch(\Exception $e){
