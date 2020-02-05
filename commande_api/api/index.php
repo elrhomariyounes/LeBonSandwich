@@ -1,6 +1,7 @@
 <?php
 use \lbs\command\Helpers\DataBaseHelper;
 use \lbs\command\control\OrderController;
+use \lbs\command\Middleware\TokenMiddleware;
 require '../src/vendor/autoload.php';
 
 //Require settings files for Slim Container
@@ -15,9 +16,21 @@ $app = new \Slim\App($c);
 //Start Eloquent Connection
 DataBaseHelper::ConnectToDatabase($app->getContainer()->settings['dbConf']);
 
-$app->get('/Orders', OrderController::class.':GetOrders')->setName('orders');
-$app->get('/Orders/{id}', OrderController::class.':GetOrder')->setName('order');
-$app->post('/Orders',OrderController::class.':AddOrder');
-$app->put('/Orders/{id}',OrderController::class.':UpdateOrder');
+$app->get('/Orders[/]', function($rq,$rs,$args) use ($c){
+    return (new OrderController($c))->GetOrders($rq,$rs,$args);
+})->setName('orders');
+
+//TODO ADD Token Middleware
+$app->get('/Orders/{id}[/]', function($rq,$rs,$args) use ($c){
+    return (new OrderController($c))->GetOrder($rq,$rs,$args);
+})->setName('order')->add(new TokenMiddleware($c));
+
+$app->post('/Orders[/]',function($rq,$rs,$args) use ($c){
+    return (new OrderController($c))->AddOrder($rq,$rs,$args);
+});
+
+$app->put('/Orders/{id}[/]',function($rq,$rs,$args) use ($c){
+    return (new OrderController($c))->UpdateOrder($rq,$rs,$args);
+});
 
 $app->run();

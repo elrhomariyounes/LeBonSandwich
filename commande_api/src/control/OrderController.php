@@ -54,14 +54,19 @@ class OrderController{
             $rs = $rs->withHeader('Content-type', 'application/json');
             return $rs;
         }
-        //Get by Id
+        //Get the token from the Middleware
+        $token = $rq->getAttribute('token');
+
         if(isset($args["id"])){
             try{
-                $order = Order::find($args["id"]);
+                //Get the order with the id and token passed
+                $order = Order::where('id','=',$args['id'])
+                                ->where('token','=',$token)
+                                ->first();
 
                 //Test if the Order is found
                 if($order===null){
-                    $error = ["type"=>"error","error"=>404,"message"=>"Order not found"];
+                    $error = ["type"=>"error","error"=>404,"message"=>"Order not found   $token"];
                     $rs->getBody()->write(json_encode($error));
                     $rs= $rs->withStatus(404);
                     $rs = $rs->withHeader('Content-type', 'application/json');
@@ -98,6 +103,10 @@ class OrderController{
         $parsedBody = $rq->getParsedBody();
         if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison'])){
             try {
+                //Generate Token
+                $token = openssl_random_pseudo_bytes(32);
+                $token = bin2hex($token);
+
                 //Creating the order and saving it
                 $order = new Order();
                 $order->id=Uuid::uuid4();
@@ -105,17 +114,17 @@ class OrderController{
                 $order->mail=filter_var($parsedBody['mail'],FILTER_SANITIZE_EMAIL);
                 $order->livraison=$parsedBody['livraison'];
                 $order->created_at=date("Y-m-d H:i:s");
+                $order->token=$token;
+                //TODO Calculer le montant de la command Q3
+                //TODO Get order items to calculate montant items are in the the body request
                 $order->saveOrFail();
 
                 //Format livraison date
-                $fullLivraisonDate = new DateTime($order->livraison);
+                $fullLivraisonDate = new \DateTime($order->livraison);
                 $date = $fullLivraisonDate->format('Y-m-d');
                 $time = $fullLivraisonDate->format('H:i:s');
 
-                //Generate Token
-                $token = openssl_random_pseudo_bytes(32);
-                $token = bin2hex($token);
-
+                //TODO Modify response to return also the items Q3
                 //Return the response
                 $responseObject = [
                     "commande"=>[
