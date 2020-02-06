@@ -39,7 +39,7 @@ class CatalogController
         //Check if there is no sandwiches with this categorie
         if(count($sandwiches)==0){
             $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
-            $response = ["type"=>"error","error"=>404,"message"=>"No Sandwichse found with this categorie : ".$categorie->nom];
+            $response = ["type"=>"error","error"=>404,"message"=>"No Sandwiches found with this categorie : ".$categorie->nom];
             $rs->getBody()->write(json_encode($response));
             return $rs;
         }
@@ -100,5 +100,33 @@ class CatalogController
         $response = ["type"=>"error","error"=>400,"message"=>"Bad Request !! Request not well formed"];
         $rs->getBody()->write(json_encode($response));
         return $rs;
+    }
+
+    public function GetSandwichByRef(Request $rq, Response $rs, $args){
+        try {
+            $sandwich = $this->_db->sandwich->findOne(['ref'=>$args['id']],['_id'=>0]);
+
+            if($sandwich==null){
+                $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
+                $response = ["type"=>"error","error"=>404,"message"=>"No Sandwich found with this ref : ".$args['id']];
+                $rs->getBody()->write(json_encode($response));
+                return $rs;
+            }
+
+            $rs=$rs->withStatus(200)->withHeader("Content-Type","application/json;charset=utf-8");
+            $responseObject=[
+                "type"=>"resource",
+                "sandwich"=>$sandwich
+            ];
+            $rs->getBody()->write(json_encode($responseObject));
+            return $rs;
+
+        }catch(\Exception $ex){
+            $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
+            $response = ["type"=>"error","error"=>500,"message"=>$ex->getMessage()];
+            $rs->getBody()->write(json_encode($response));
+            return $rs;
+        }
+
     }
 }

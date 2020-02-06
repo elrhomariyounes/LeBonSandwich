@@ -23,4 +23,9 @@ $app->get('/categories/{id}[/]',function ($rq,$rs,$args) use($container){
     $controller = new \lbs\catalogue\Controller\CatalogController($container);
     return $controller->GetCategorieById($rq,$rs,$args);
 });
+
+$app->get('/sandwiches/{id}[/]',function ($rq,$rs,$args) use($container){
+    $controller = new \lbs\catalogue\Controller\CatalogController($container);
+    return $controller->GetSandwichByRef($rq,$rs,$args);
+});
 $app->run();
