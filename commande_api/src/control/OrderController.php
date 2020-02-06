@@ -5,12 +5,17 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
+use GuzzleHttp\Client;
 class OrderController{
-    protected $_container;
-
+    private $_container;
+    private $client;
     public function __construct(\Slim\Container $container=null )
     {
         $this->_container = $container;
+        $this->client= new Client([
+            'base_uri'=>'http://api.catalogue.local',
+            'timeout'=>2.0
+        ]);
     }
 
     /*
@@ -101,9 +106,29 @@ class OrderController{
     public function AddOrder(Request $rq, Response $rs, $args){
         //Get Parsed Body
         $parsedBody = $rq->getParsedBody();
-        if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison'])){
+        if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison']) && isset($parsedBody['items'])){
             try {
-                //Generate Token
+                //Get the attributes of sandwich for saving the item related to the order
+                $items=[];
+                $montant=0;
+                $body=null;
+                foreach ($parsedBody['items'] as $item){
+                    $explodedItem=explode("/",$item['uri']);
+                    $catalogResponse = $this->client->get('/sandwiches/'.$explodedItem[2]);
+                    if($catalogResponse->getStatusCode()==200){
+                        $body = json_decode($catalogResponse->getBody(),true);
+                        $i=[
+                            'uri'=>$item['uri'],
+                            'libelle'=>$body['sandwich']['nom'],
+                            'tarif'=>$body['sandwich']['prix']['numberDecimal'],
+                            'quantite'=>$item['q']
+                        ];
+                        array_push($items,$i);
+                        $montant+=$i['tarif']*$i['quantite'];
+                    }
+                }
+
+                //Generate Token for the Order
                 $token = openssl_random_pseudo_bytes(32);
                 $token = bin2hex($token);
 
@@ -112,19 +137,19 @@ class OrderController{
                 $order->id=Uuid::uuid4();
                 $order->nom=filter_var($parsedBody['nom'],FILTER_SANITIZE_STRING);
                 $order->mail=filter_var($parsedBody['mail'],FILTER_SANITIZE_EMAIL);
-                $order->livraison=$parsedBody['livraison'];
+                $order->livraison=implode(" ",$parsedBody['livraison']);
                 $order->created_at=date("Y-m-d H:i:s");
                 $order->token=$token;
-                //TODO Calculer le montant de la command Q3
-                //TODO Get order items to calculate montant items are in the the body request
+                $order->montant=$montant;
                 $order->saveOrFail();
+                //Saving the items
+                $order->orderItems()->createMany($items);
 
                 //Format livraison date
                 $fullLivraisonDate = new \DateTime($order->livraison);
                 $date = $fullLivraisonDate->format('Y-m-d');
                 $time = $fullLivraisonDate->format('H:i:s');
 
-                //TODO Modify response to return also the items Q3
                 //Return the response
                 $responseObject = [
                     "commande"=>[
@@ -137,7 +162,9 @@ class OrderController{
                     ],
                     "id"=>$order->id,
                     "token"=>$token,
-                    "montant"=>$order->montant
+                    "montant"=>$order->montant,
+                    "items"=>$items
+
                 ];
 
                 $rs=$rs->withStatus(201)

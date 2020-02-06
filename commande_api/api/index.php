@@ -20,7 +20,6 @@ $app->get('/Orders[/]', function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->GetOrders($rq,$rs,$args);
 })->setName('orders');
 
-//TODO ADD Token Middleware
 $app->get('/Orders/{id}[/]', function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->GetOrder($rq,$rs,$args);
 })->setName('order')->add(new TokenMiddleware($c));
