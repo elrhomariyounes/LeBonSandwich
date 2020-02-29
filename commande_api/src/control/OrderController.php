@@ -1,11 +1,12 @@
 <?php
 namespace lbs\command\control;
+use Firebase\JWT\JWT;
 use lbs\command\model\Order;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
-use GuzzleHttp\Client;
+use lbs\command\model\Client;
 class OrderController{
     private $_container;
     private $client;
@@ -232,6 +233,56 @@ class OrderController{
         $rs->getBody()->write(json_encode($error));
         $rs = $rs->withStatus(400);
         $rs = $rs->withHeader('Content-type', 'application/json');
+        return $rs;
+    }
+
+    /*
+     * Auth client
+     *
+     */
+
+    public function AuthClient(Request $rq, Response $rs, $args){
+        $key = "MYSECUREKEY";
+        $payload = [
+            'iss'=>'http://api.commande.local',
+            'aud'=>'http://api.commande.local',
+            'iat'=>time(),
+            'exp'=>time()+3600,
+            'data'=>[
+                'clientId'=>$rq->getAttribute('client_id')
+            ]
+        ];
+        $token = JWT::encode($payload,$key);
+        $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+        $rs->getBody()->write(json_encode(['token'=>$token]));
+        return $rs;
+    }
+
+    /*
+     * Get Client by id
+     *
+     */
+    public function GetClientById(Request $rq, Response $rs, $args){
+        //get token from middleware
+        $tokenString = $rq->getAttribute('token');
+        $token = json_decode($tokenString,true);
+        if($token['data']['clientId']['id']!=$args['id']){
+            $error=[
+              "type"=>"error",
+              "error"=>401,
+              "message"=>"Not authorized to get this resource"
+            ];
+            $rs=$rs->withStatus(401)->withHeader('Content-type', 'application/json');
+            $rs->getBody()->write(json_encode($error));
+            return $rs;
+        }
+        $client = Client::select('id','nom_client','mail_client','cumul_achats')->where('id','=',$token['data']['clientId']['id'])->first();
+        $response=[
+            "type"=>"resource",
+            "client"=>$client
+        ];
+        $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+        $rs->getBody()->write(json_encode($response));
         return $rs;
     }
 }
