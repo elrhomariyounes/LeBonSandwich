@@ -14,7 +14,7 @@ $container = new \Slim\Container($containerConfig);
 $app = new \Slim\App($container);
 
 //Routes
-$app->get('/categories/{id}/sandwichs[/]',function ($rq,$rs,$args) use($container){
+$app->get('/categories/{id}/sandwiches[/]',function ($rq,$rs,$args) use($container){
     $controller = new \lbs\catalogue\Controller\CatalogController($container);
     return $controller->GetSandwichesByCategorie($rq,$rs,$args);
 });
