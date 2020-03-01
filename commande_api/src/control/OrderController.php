@@ -1,19 +1,21 @@
 <?php
 namespace lbs\command\control;
 use Firebase\JWT\JWT;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use lbs\command\model\Order;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
 use lbs\command\model\Client;
+use GuzzleHttp\Client as GClient;
 class OrderController{
     private $_container;
     private $client;
     public function __construct(\Slim\Container $container=null )
     {
         $this->_container = $container;
-        $this->client= new Client([
+        $this->client= new GClient([
             'base_uri'=>'http://api.catalogue.local',
             'timeout'=>2.0
         ]);
@@ -107,6 +109,8 @@ class OrderController{
     public function AddOrder(Request $rq, Response $rs, $args){
         //Get Parsed Body
         $parsedBody = $rq->getParsedBody();
+        $catalogResponse=null;
+        $explodedItem=null;
         if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison']) && isset($parsedBody['items'])){
             try {
                 //Get the attributes of sandwich for saving the item related to the order
@@ -138,13 +142,20 @@ class OrderController{
                 $order->id=Uuid::uuid4();
                 $order->nom=filter_var($parsedBody['nom'],FILTER_SANITIZE_STRING);
                 $order->mail=filter_var($parsedBody['mail'],FILTER_SANITIZE_EMAIL);
+                $order->client_id=filter_var($parsedBody['clientId'], FILTER_VALIDATE_INT);
                 $order->livraison=implode(" ",$parsedBody['livraison']);
                 $order->created_at=date("Y-m-d H:i:s");
                 $order->token=$token;
                 $order->montant=$montant;
                 $order->saveOrFail();
+
                 //Saving the items
                 $order->orderItems()->createMany($items);
+
+                //Update cumul_achat client
+                $client = Client::where('id','=',$parsedBody['clientId'])->first();
+                $client->cumul_achats+=$montant;
+                $client->save();
 
                 //Format livraison date
                 $fullLivraisonDate = new \DateTime($order->livraison);
@@ -276,13 +287,25 @@ class OrderController{
             $rs->getBody()->write(json_encode($error));
             return $rs;
         }
-        $client = Client::select('id','nom_client','mail_client','cumul_achats')->where('id','=',$token['data']['clientId']['id'])->first();
-        $response=[
-            "type"=>"resource",
-            "client"=>$client
-        ];
-        $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
-        $rs->getBody()->write(json_encode($response));
-        return $rs;
+        try{
+            $client = Client::select('id','nom_client','mail_client','cumul_achats')->where('id','=',$token['data']['clientId']['id'])->firstOrFail();
+            $response=[
+                "type"=>"resource",
+                "client"=>$client
+            ];
+            $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+            $rs->getBody()->write(json_encode($response));
+            return $rs;
+        }catch (ModelNotFoundException $ex){
+            $error=[
+                "type"=>"error",
+                "error"=>404,
+                "message"=>"No client found with the id ".$args['id']
+            ];
+            $rs=$rs->withStatus(404)->withHeader('Content-type', 'application/json');
+            $rs->getBody()->write(json_encode($error));
+            return $rs;
+        }
+
     }
 }

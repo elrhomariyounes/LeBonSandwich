@@ -122,7 +122,7 @@ class CatalogController
             return $rs;
 
         }catch(\Exception $ex){
-            $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
+            $rs=$rs->withStatus(500)->withHeader("Content-Type","application/json;charset=utf-8");
             $response = ["type"=>"error","error"=>500,"message"=>$ex->getMessage()];
             $rs->getBody()->write(json_encode($response));
             return $rs;

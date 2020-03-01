@@ -39,7 +39,7 @@ $app->get('/Orders/{id}[/]', function($rq,$rs,$args) use ($c){
 //Add order
 $app->post('/Orders[/]',function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->AddOrder($rq,$rs,$args);
-});
+})->add(new \lbs\command\Middleware\ClientMiddleware($c));
 
 //Update an order
 $app->put('/Orders/{id}[/]',function($rq,$rs,$args) use ($c){
