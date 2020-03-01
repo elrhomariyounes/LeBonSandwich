@@ -109,8 +109,6 @@ class OrderController{
     public function AddOrder(Request $rq, Response $rs, $args){
         //Get Parsed Body
         $parsedBody = $rq->getParsedBody();
-        $catalogResponse=null;
-        $explodedItem=null;
         if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison']) && isset($parsedBody['items'])){
             try {
                 //Get the attributes of sandwich for saving the item related to the order
@@ -142,7 +140,6 @@ class OrderController{
                 $order->id=Uuid::uuid4();
                 $order->nom=filter_var($parsedBody['nom'],FILTER_SANITIZE_STRING);
                 $order->mail=filter_var($parsedBody['mail'],FILTER_SANITIZE_EMAIL);
-                $order->client_id=filter_var($parsedBody['clientId'], FILTER_VALIDATE_INT);
                 $order->livraison=implode(" ",$parsedBody['livraison']);
                 $order->created_at=date("Y-m-d H:i:s");
                 $order->token=$token;
@@ -152,10 +149,16 @@ class OrderController{
                 //Saving the items
                 $order->orderItems()->createMany($items);
 
-                //Update cumul_achat client
-                $client = Client::where('id','=',$parsedBody['clientId'])->first();
-                $client->cumul_achats+=$montant;
-                $client->save();
+                //Update cumul_achat client and update client id in Order
+                if(isset($parsedBody['clientId'])){
+                    $order = Order::where('token','=',$token)->first();
+                    $order->client_id=filter_var($parsedBody['clientId'], FILTER_VALIDATE_INT);
+                    $order->saveOrFail();
+                    $client = Client::where('id','=',$parsedBody['clientId'])->first();
+                    $client->cumul_achats+=$montant;
+                    $client->save();
+                }
+
 
                 //Format livraison date
                 $fullLivraisonDate = new \DateTime($order->livraison);

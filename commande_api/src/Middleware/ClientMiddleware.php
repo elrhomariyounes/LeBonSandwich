@@ -13,12 +13,6 @@ class ClientMiddleware extends Middleware
     {
         //TODO : save in config file
         $key="MYSECUREKEY";
-        // TODO:Get the parsed body
-        // 2 - if clientId passed in body check if there is a token jwt
-        // 3 - no token => not authorized 401
-        // 4 - decode token
-        // 5 - token not matching client id => not authorized 401
-        // 6 - token matched => $next($rq,$rs)
         $parsedBody = $rq->getParsedBody();
         if(isset($parsedBody['clientId'])){
             //No Auth Header
