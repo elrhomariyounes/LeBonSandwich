@@ -4,7 +4,7 @@ namespace lbs\command\Middleware;
 use \Slim\Container;
 class Middleware
 {
-    private $container;
+    protected $container;
 
     public function __construct($container)
     {

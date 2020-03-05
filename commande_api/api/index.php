@@ -18,6 +18,12 @@ $app = new \Slim\App($c);
 //Start Eloquent Connection
 DataBaseHelper::ConnectToDatabase($app->getContainer()->settings['dbConf']);
 
+//Cors Middleware
+$app->options('/{routes:.+}', function ($request, $response, $args) {
+    return $response;
+});
+$app->add(new \lbs\command\Middleware\CorsMiddleware($c));
+
 //TODO Delete (APP HEALTH Status)
 $app->get('/Hello[/]', function($rq,$rs,$args) use ($c){
     $rs=$rs->withStatus(200)
