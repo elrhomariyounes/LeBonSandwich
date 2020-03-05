@@ -10,8 +10,7 @@ class JWTMiddleware extends Middleware
 {
     public function __invoke(Request $rq, Response $rs, $next)
     {
-        $key="MYSECUREKEY";
-        // TODO:
+        $key=$this->container->settings['key'];
         $header = $rq->getHeader('Authorization');
         if(count($header)==0){
             $error = [

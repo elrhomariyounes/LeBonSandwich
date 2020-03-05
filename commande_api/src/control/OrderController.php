@@ -256,7 +256,7 @@ class OrderController{
      */
 
     public function AuthClient(Request $rq, Response $rs, $args){
-        $key = "MYSECUREKEY";
+        $key = $this->_container->settings['key'];
         $payload = [
             'iss'=>'http://api.commande.local',
             'aud'=>'http://api.commande.local',

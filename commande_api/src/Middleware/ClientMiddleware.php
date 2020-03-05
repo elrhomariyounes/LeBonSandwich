@@ -11,8 +11,7 @@ class ClientMiddleware extends Middleware
 {
     public function __invoke(Request $rq, Response $rs, $next)
     {
-        //TODO : save in config file
-        $key="MYSECUREKEY";
+        $key=$this->container->settings['key'];
         $parsedBody = $rq->getParsedBody();
         if(isset($parsedBody['clientId'])){
             //No Auth Header
