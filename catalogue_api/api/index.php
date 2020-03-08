@@ -19,15 +19,32 @@ $app->options('/{routes:.+}', function ($request, $response, $args) {
 $app->add(new \lbs\catalogue\Middlewares\CorsMiddleware($container));
 
 //Routes
-$app->get('/categories/{id}/sandwiches[/]',function ($rq,$rs,$args) use($container){
-    return (new CatalogController($container))->GetSandwichesByCategorie($rq,$rs,$args);
+
+//Get all the categories
+$app->get('/categories[/]',function ($rq,$rs,$args) use($container){
+    return (new CatalogController($container))->GetAllCategories($rq,$rs,$args);
 });
 
+//Get categorie by id
 $app->get('/categories/{id}[/]',function ($rq,$rs,$args) use($container){
     return (new CatalogController($container))->GetCategorieById($rq,$rs,$args);
 });
 
+//Get all sandwiches
+$app->get('/sandwiches[/]',function ($rq,$rs,$args) use($container){
+    return (new CatalogController($container))->GetAllSandwiches($rq,$rs,$args);
+});
+
+//Get sandwich by Reg
 $app->get('/sandwiches/{id}[/]',function ($rq,$rs,$args) use($container){
     return (new CatalogController($container))->GetSandwichByRef($rq,$rs,$args);
 });
+
+$app->get('/categories/{id}/sandwiches[/]',function ($rq,$rs,$args) use($container){
+    return (new CatalogController($container))->GetSandwichesByCategorie($rq,$rs,$args);
+});
+
+
+
+
 $app->run();

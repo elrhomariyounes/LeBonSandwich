@@ -22,10 +22,10 @@ class CatalogController
      */
     public function GetSandwichesByCategorie(Request $rq, Response $rs, $args){
         //Get the categorie
-        $categorie = $this->_db->categorie->findOne(['id'=>intval($args['id'])],['id'=>1,'nom'=>1]);
+        $category = $this->_db->categorie->findOne(['id'=>intval($args['id'])],['id'=>1,'nom'=>1]);
 
         //Check if there is no categorie with this id
-        if($categorie==null){
+        if($category==null){
             $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
             $response = ["type"=>"error","error"=>404,"message"=>"No Categorie found with the id : ".$args['id']];
             $rs->getBody()->write(json_encode($response));
@@ -33,13 +33,13 @@ class CatalogController
         }
 
         //Categorie found, Get the sandwiches with this categorie
-        $sandwichesCursor = $this->_db->sandwich->find(['categories'=>$categorie->nom]);
+        $sandwichesCursor = $this->_db->sandwich->find(['categories'=>$category->nom]);
         $sandwiches=$sandwichesCursor->toArray();
 
         //Check if there is no sandwiches with this categorie
         if(count($sandwiches)==0){
             $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
-            $response = ["type"=>"error","error"=>404,"message"=>"No Sandwiches found with this categorie : ".$categorie->nom];
+            $response = ["type"=>"error","error"=>404,"message"=>"No Sandwiches found in this categorie : ".$category->nom];
             $rs->getBody()->write(json_encode($response));
             return $rs;
         }
@@ -62,7 +62,22 @@ class CatalogController
         $rs->getBody()->write(json_encode($response));
         return $rs;
     }
-
+    /*
+     * Get all categories
+     *
+     */
+    public function GetAllCategories(Request $rq, Response $rs,$args){
+        $categoriesCursor = $this->_db->categorie->find([],['_id'=>0]);
+        $categories = $categoriesCursor->toArray();
+        $rs = $rs->withStatus(200)->withHeader("Content-Type","application/json;charset=utf-8");
+        $responseObject = [
+            "type"=>"collection",
+            "count"=>count($categories),
+            "categories"=>$categories
+        ];
+        $rs->getBody()->write(json_encode($responseObject));
+        return $rs;
+    }
     /*
      * Get Categorie By id
      *
@@ -87,8 +102,8 @@ class CatalogController
                 "date"=>date("d-m-Y"),
                 "categorie"=>$categorie,
                 "links"=>[
-                    "sandwiches"=> ["href"=>"/categorie/".$args['id']."/sandwichs"],
-                    "self"=>["href"=>"/categorie/".$args['id']]
+                    "sandwiches"=> ["href"=>"/categories/".$args['id']."/sandwiches"],
+                    "self"=>["href"=>"/categories/".$args['id']]
                 ]
             ];
             $rs->getBody()->write(json_encode($response));
@@ -102,6 +117,26 @@ class CatalogController
         return $rs;
     }
 
+    /*
+     * Get all the sandwiches
+     *
+     */
+    public function GetAllSandwiches(Request $rq, Response $rs, $args){
+        $sandiwchesCursor = $this->_db->sandwich->find([],['_id'=>0]);
+        $sandwiches = $sandiwchesCursor->toArray();
+        $rs = $rs->withStatus(200)->withHeader("Content-Type","application/json;charset=utf-8");
+        $responseObject = [
+            "type"=>"collection",
+            "count"=>count($sandwiches),
+            "sandwiches"=>$sandwiches
+        ];
+        $rs->getBody()->write(json_encode($responseObject));
+        return $rs;
+    }
+    /*
+     * Get sandwich by ref
+     *
+     */
     public function GetSandwichByRef(Request $rq, Response $rs, $args){
         try {
             $sandwich = $this->_db->sandwich->findOne(['ref'=>$args['id']],['_id'=>0]);
