@@ -1,6 +1,7 @@
 <?php
 
 namespace lbs\suiviCommande\Controller;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use lbs\suiviCommande\Model\Item;
 use lbs\suiviCommande\Model\Order;
@@ -13,7 +14,7 @@ class OrderController
         $this->_container=$container;
     }
     /*
-     * Get Orders
+     * Get all Orders with pagination page & size parameters
      *
      */
     public function GetOrders(Request $rq, Response $rs, $args){
@@ -22,7 +23,7 @@ class OrderController
         $state=1;
         $page=1;
         $size=10;
-        //Sanitizing the parameters
+        //
         if(isset($_GET["page"]))
             $page = intval($_GET["page"]);
         if(isset($_GET["size"]))
@@ -31,7 +32,7 @@ class OrderController
             $state = intval($_GET["s"]);
 
         //Invalid inputs
-        if($page<1 || $page > ($count/$size)+1 || $size<1 || $size>$count){
+        if($page<1 || $page > ($count/$size)+1 || $size<10 || $size>$count){
             $rs = $rs->withStatus(400)->withHeader('Content-Type','application/json;charset=utf-8');
             $rsp = ["type"=>"error","error"=>400,"message"=>"Bad Request Page or Size Invalid !!"];
             $rs->getBody()->write(json_encode($rsp));
@@ -44,10 +45,10 @@ class OrderController
             $orders=$orders->where('status','=',$state);
         }
         if($page>1){
-        $orders = $orders->offset(($page-1)*$size)->limit($size)->get();
+        $orders = $orders->offset(($page-1)*$size)->with('orderItems')->limit($size)->get();
         }
         else {
-            $orders = $orders->limit($size)->get();
+            $orders = $orders->limit($size)->with('orderItems')->get();
         }
 
         $ordersObject=[];
@@ -69,6 +70,19 @@ class OrderController
           ],
             "orders"=>$orders
         ];
+
+        //Unset next and prev field
+        $last = intval($count/$size)+1;
+        if($page==$last){
+            unset($result['links']['next']);
+            unset($result['links']['last']);
+        }
+
+        if($page==1){
+            unset($result['links']['prev']);
+            unset($result['links']['first']);
+        }
+
 
         $rs = $rs->withStatus(200)->withHeader('Content-Type','application/json;charset=utf-8');
         $rs->getBody()->write(json_encode($result));
@@ -102,5 +116,53 @@ class OrderController
         }
 
         return $rs;
+    }
+
+    /*
+     * Update Order Status
+     *
+     */
+    public function UpdateOrderStatus(Request $rq, Response $rs, $args){
+        // Valid States
+        $validStates = [1,2,3,4];
+
+        //Get body
+        $body = $rq->getParsedBody();
+        if(isset($body['state']) && $args['id']){
+            if(!in_array($body['state'],$validStates)){
+                $error = [
+                    "type"=>"error",
+                    "error"=>422,
+                    "message"=>"Invalid state value !!"
+                ];
+                $rs=$rs->withStatus(422)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode($error));
+                return $rs;
+            }
+            try {
+                //Update the order
+                $order = Order::where('id','=',$args['id'])->firstOrFail();
+                $order->status = filter_var($body['state'],FILTER_VALIDATE_INT);
+                $order->save();
+                //Response object
+                $responseObject = [
+                  "type"=>"resource",
+                    "order"=>$order
+                ];
+                $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode($responseObject));
+                return $rs;
+            }
+            catch (ModelNotFoundException $ex){
+                $error = [
+                    "type"=>"error",
+                    "error"=>404,
+                    "message"=>"Order not found with the id : ".$args['id']
+                ];
+                $rs=$rs->withStatus(404)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode($error));
+                return $rs;
+            }
+        }
     }
 }

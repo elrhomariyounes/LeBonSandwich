@@ -15,7 +15,15 @@ $app = new \Slim\App($c);
 //Start Eloquent Connection
 DataBaseHelper::ConnectToDatabase($app->getContainer()->settings['dbConf']);
 
-$app->get('/Orders[/]', OrderController::class.':GetOrders')->setName('orders');
+$app->get('/orders[/]', function ($rq, $rs,$args) use ($c){
+    return (new OrderController($c))->GetOrders($rq,$rs,$args);
+});
 
-$app->get('/Orders/{id}[/]',OrderController::class.':GetOrderById')->setName('order');
+$app->get('/orders/{id}[/]',function ($rq, $rs,$args) use ($c){
+    return (new OrderController($c))->GetOrderById($rq,$rs,$args);
+});
+
+$app->put('/orders/{id}[/]',function ($rq, $rs,$args) use ($c){
+    return (new OrderController($c))->UpdateOrderStatus($rq,$rs,$args);
+});
 $app->run();
