@@ -26,4 +26,8 @@ $app->get('/orders/{id}[/]',function ($rq, $rs,$args) use ($c){
 $app->put('/orders/{id}[/]',function ($rq, $rs,$args) use ($c){
     return (new OrderController($c))->UpdateOrderStatus($rq,$rs,$args);
 });
+
+$app->get('/orders/{id}/items[/]',function ($rq, $rs,$args) use ($c){
+    return (new OrderController($c))->GetOrderItems($rq,$rs,$args);
+});
 $app->run();

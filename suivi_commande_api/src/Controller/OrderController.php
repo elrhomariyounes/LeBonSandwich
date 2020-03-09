@@ -102,8 +102,8 @@ class OrderController
             $rs = $rs->withStatus(200)->withHeader('Content-Type', 'application/json;charset=utf-8');
             $rs->getBody()->write(json_encode([
                 "type" => "ressource",
-                "links" => ["self"=>"/Orders/".$args['id'],"items"=>"/Orders/" . $args['id']."/items"],
-                "orders" => $order
+                "links" => ["self"=>"/orders/".$args['id'],"items"=>"/orders/" . $args['id']."/items"],
+                "order" => $order
             ]));
             //Order Not Found
         } catch (ModelNotFoundException $exception) {
@@ -159,10 +159,39 @@ class OrderController
                     "error"=>404,
                     "message"=>"Order not found with the id : ".$args['id']
                 ];
-                $rs=$rs->withStatus(404)->withHeader('Content-type', 'application/json');
+                $rs=$rs->withStatus(404)->withHeader('Content-Type', 'application/json');
                 $rs->getBody()->write(json_encode($error));
                 return $rs;
             }
+        }
+    }
+
+    /*
+     * Get Order items
+     *
+     */
+    public function GetOrderItems(Request $rq, Response $rs, $args){
+        if(isset($args['id'])){
+            $items = Item::query()->select('uri','libelle','tarif','quantite')->where('command_id', '=', $args['id'])->get();
+            $order = Order::find($args['id']);
+            if(count($items)){
+                $responseObject=[
+                    "type"=>"collection",
+                    "count"=>count($items),
+                    "items"=>$items
+                ];
+                $rs=$rs->withStatus(200)->withHeader("Content-Type","application/json");
+                $rs->getBody()->write(json_encode($responseObject));
+                return $rs;
+            }
+            $error=[
+                "type"=>"error",
+                "error"=>404,
+                "message"=>"Order not found with the id : ".$args['id']
+            ];
+            $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json");
+            $rs->getBody()->write(json_encode($error));
+            return $rs;
         }
     }
 }
