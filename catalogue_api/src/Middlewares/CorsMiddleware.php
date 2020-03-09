@@ -13,8 +13,9 @@ class CorsMiddleware
         if(!$this->OriginIsSet($rq)){
             $error=[
                 "type"=>"error",
-                "error"=>403,
-                "message"=>"No Origin Header !!"
+                "error"=>401,
+                "message"=>"No Origin Header !!",
+                "object"=>$this->OriginIsSet($rq)
             ];
             $rs->getBody()->write(json_encode($error));
             $rs=$rs->WithStatus(401);
