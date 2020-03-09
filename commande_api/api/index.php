@@ -31,24 +31,24 @@ $app->get('/Hello[/]', function($rq,$rs,$args) use ($c){
     $rs->getBody()->write(json_encode(["message"=>"Hello Younes"]));
 });
 
-//Get Orders routes
+//Get Orders
 $app->get('/Orders[/]', function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->GetOrders($rq,$rs,$args);
 })->setName('orders');
 
 //Get Order by id
-$app->get('/Orders/{id}[/]', function($rq,$rs,$args) use ($c){
+$app->get('/orders/{id}[/]', function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->GetOrder($rq,$rs,$args);
 })->setName('order')->add(new TokenMiddleware($c));
 
 
 //Add order
-$app->post('/Orders[/]',function($rq,$rs,$args) use ($c){
+$app->post('/orders[/]',function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->AddOrder($rq,$rs,$args);
 })->add(new \lbs\command\Middleware\ClientMiddleware($c));
 
 //Update an order
-$app->put('/Orders/{id}[/]',function($rq,$rs,$args) use ($c){
+$app->put('/orders/{id}[/]',function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->UpdateOrder($rq,$rs,$args);
 });
 
@@ -62,5 +62,9 @@ $app->get('/clients/{id}[/]', function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->GetClientById($rq,$rs,$args);
 })->add(new JWTMiddleware($c));
 
+// Pay Order
+$app->put('/orders/{id}/pay', function($rq,$rs,$args) use ($c){
+    return (new OrderController($c))->PayOrder($rq,$rs,$args);
+});
 // Run the application
 $app->run();

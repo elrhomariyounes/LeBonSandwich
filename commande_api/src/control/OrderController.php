@@ -1,5 +1,6 @@
 <?php
 namespace lbs\command\control;
+use Faker\Provider\DateTime;
 use Firebase\JWT\JWT;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use lbs\command\model\Order;
@@ -107,6 +108,9 @@ class OrderController{
      *
      */
     public function AddOrder(Request $rq, Response $rs, $args){
+        //Get origin header from Middleware for Guzzle Client
+        $origin = $rq->getAttribute('origin');
+        $headers = ['Origin'=>$origin];
         //Get Parsed Body
         $parsedBody = $rq->getParsedBody();
         if(isset($parsedBody['nom']) && isset($parsedBody['mail']) && isset($parsedBody['livraison']) && isset($parsedBody['items'])){
@@ -117,7 +121,7 @@ class OrderController{
                 $body=null;
                 foreach ($parsedBody['items'] as $item){
                     $explodedItem=explode("/",$item['uri']);
-                    $catalogResponse = $this->client->get('/sandwiches/'.$explodedItem[2]);
+                    $catalogResponse = $this->client->get('/sandwiches/'.$explodedItem[2],['headers'=>$headers]);
                     if($catalogResponse->getStatusCode()==200){
                         $body = json_decode($catalogResponse->getBody(),true);
                         $i=[
@@ -190,7 +194,7 @@ class OrderController{
                 return $rs;
             }
             catch(\Exception $e){
-                $error = ["type"=>"error","error"=>500,"message"=>"Internal Server ".$e->getMessage()];
+                $error = ["type"=>"error","error"=>500,"message"=>"Internal Server ".$e->getMessage(),"object"=>$headers];
                 $rs->getBody()->write(json_encode($error));
                 $rs = $rs->withStatus(500);
                 $rs = $rs->withHeader('Content-type', 'application/json');
@@ -310,5 +314,58 @@ class OrderController{
             return $rs;
         }
 
+    }
+
+    /*
+     * Pay order
+     *
+     */
+    public function PayOrder(Request $rq, Response $rs, $args){
+        if(isset($args['id'])){
+            $order = Order::find($args['id']);
+            if($order === null){
+                $error=[
+                    "type"=>"error",
+                    "error"=>404,
+                    "message"=>"No Order found with the id ".$args['id']
+                ];
+                $rs=$rs->withStatus(404)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode($error));
+                return $rs;
+            }
+            $body = $rq->getParsedBody();
+            if(isset($body['cardNumber']) && isset($body['expireDate'])){
+                if(new \DateTime()>new \DateTime($body['expireDate'])){
+                    $error=[
+                        "type"=>"error",
+                        "error"=>422,
+                        "message"=>"Your card has expired !!"
+                    ];
+                    $rs=$rs->withStatus(422)->withHeader('Content-type', 'application/json');
+                    $rs->getBody()->write(json_encode($error));
+                    return $rs;
+                }
+                // Generate a ref paiement
+                $ref = openssl_random_pseudo_bytes(48);
+                $ref = bin2hex($ref);
+
+                //TODO : Update the order state also
+                $order->date_paiement=date("Y-m-d H:i:s");
+                $order->mode_paiement = 1;
+                $order->ref_paiement = $ref;
+                $order->save();
+                $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode(["type"=>"resource","order"=>$order]));
+                return $rs;
+            }
+        }
+        $error=[
+            "type"=>"error",
+            "error"=>400,
+            "message"=>"Bad Request please verify inputs"
+        ];
+        $rs=$rs->withStatus(400)->withHeader('Content-type', 'application/json');
+        $rs->getBody()->write(json_encode($error));
+        return $rs;
     }
 }

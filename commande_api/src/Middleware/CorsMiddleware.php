@@ -22,6 +22,7 @@ class CorsMiddleware extends Middleware
             return $rs;
         }
         $origin = $rq->getHeaderLine('Origin');
+        $rq = $rq->withAttribute('origin',$origin);
         $response = $next($rq, $rs);
         return $response
             ->withHeader('Access-Control-Allow-Origin', $origin)
