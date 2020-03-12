@@ -45,6 +45,7 @@ class ClientMiddleware extends Middleware
                     }
                     //token matching with client id
                     else{
+                        $rq = $rq->withAttribute('clientId',$decodedToken->data->clientId->id);
                         return $next($rq,$rs);
                     }
                     //Error when decoding

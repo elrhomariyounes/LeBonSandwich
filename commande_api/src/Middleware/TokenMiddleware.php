@@ -20,7 +20,7 @@ class TokenMiddleware extends Middleware
             if(count($headerToken)!=0){
                 $rq = $rq->withAttribute('token',$headerToken);
                 return $next($rq,$rs);
-                }
+            }
         }
 
         //Generate Not Authorized response

@@ -349,11 +349,22 @@ class OrderController{
                 $ref = openssl_random_pseudo_bytes(48);
                 $ref = bin2hex($ref);
 
+                //Authenticated paiement
+                if(isset($body['remise'])){
+                    //TODO : business logic to calculate discount (remise) and deduct from the amount
+                    $discount = 0;
+                    $order->remise=$discount;
+                    Client::where('id','=',$rq->getAttribute('clientId'))->update(['cumul_achats'=>0]);
+                }
+
                 //TODO : Update the order state also
                 $order->date_paiement=date("Y-m-d H:i:s");
                 $order->mode_paiement = 1;
                 $order->ref_paiement = $ref;
                 $order->save();
+
+
+
                 $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
                 $rs->getBody()->write(json_encode(["type"=>"resource","order"=>$order]));
                 return $rs;
@@ -368,4 +379,40 @@ class OrderController{
         $rs->getBody()->write(json_encode($error));
         return $rs;
     }
+
+    /*
+     * Get lient orders
+     *
+     */
+    public function GetClientOrders(Request $rq, Response $rs, $args){
+        if(isset($args['id'])){
+            $tokenString = $rq->getAttribute('token');
+            $decodedToken = json_decode($tokenString,true);
+            if($decodedToken['data']['clientId']['id']!=$args['id']){
+                $error=[
+                    "type"=>"error",
+                    "error"=>401,
+                    "message"=>"Not authorized to get this resource"
+                ];
+                $rs=$rs->withStatus(401)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode($error));
+                return $rs;
+            }
+            $orders = Order::where('client_id','=',$decodedToken['data']['clientId']['id'])->get();
+            if(count($orders)){
+                $responseObject=[
+                    "type"=>"collection",
+                    "count"=>count($orders),
+                    "orders"=>$orders
+                ];
+                $rs=$rs->withStatus(401)->withHeader('Content-type', 'application/json');
+                $rs->getBody()->write(json_encode($responseObject));
+                return $rs;
+            }
+            $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+            $rs->getBody()->write(json_encode(["message"=>"No orders found for the client : ".$args['id']]));
+            return $rs;
+        }
+    }
+
 }

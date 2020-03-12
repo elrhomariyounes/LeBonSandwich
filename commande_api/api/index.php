@@ -1,7 +1,13 @@
 <?php
+
+use DavidePastore\Slim\Validation\Validation;
+use lbs\command\control\AccountController;
 use \lbs\command\Helpers\DataBaseHelper;
 use \lbs\command\control\OrderController;
+use lbs\command\Helpers\SignUpValidator;
 use lbs\command\Middleware\AuthMiddleware;
+use lbs\command\Middleware\ClientMiddleware;
+use lbs\command\Middleware\ClientValidator;
 use lbs\command\Middleware\JWTMiddleware;
 use \lbs\command\Middleware\TokenMiddleware;
 require '../src/vendor/autoload.php';
@@ -42,10 +48,10 @@ $app->get('/orders/{id}[/]', function($rq,$rs,$args) use ($c){
 })->setName('order')->add(new TokenMiddleware($c));
 
 
-//Add order
+//Add order Logged or not
 $app->post('/orders[/]',function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->AddOrder($rq,$rs,$args);
-})->add(new \lbs\command\Middleware\ClientMiddleware($c));
+})->add(new ClientMiddleware($c));
 
 //Update an order
 $app->put('/orders/{id}[/]',function($rq,$rs,$args) use ($c){
@@ -65,6 +71,17 @@ $app->get('/clients/{id}[/]', function($rq,$rs,$args) use ($c){
 // Pay Order
 $app->put('/orders/{id}/pay', function($rq,$rs,$args) use ($c){
     return (new OrderController($c))->PayOrder($rq,$rs,$args);
-});
+})->add(new ClientMiddleware($c));
+
+//Get client orders
+$app->get('/clients/{id}/orders[/]', function($rq,$rs,$args) use ($c){
+    return (new OrderController($c))->GetClientOrders($rq,$rs,$args);
+})->add(new JWTMiddleware($c));
+
+// Client registration
+$app->post('/account/signup[/]',function ($rq,$rs,$args) use ($c){
+    return (new AccountController($c))->SignUp($rq,$rs,$args);
+})->add(new Validation(SignUpValidator::Validators()));
+
 // Run the application
 $app->run();
