@@ -1,6 +1,7 @@
 <?php
 
 namespace lbs\catalogue\Controller;
+use MongoDB\Exception\Exception;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 class CatalogController
@@ -9,7 +10,7 @@ class CatalogController
     private $_client;
     private $_db;
 
-    public function __construct(\Slim\Container $container = null)
+    public function __construct(\Slim\Container $container)
     {
         $this->_container = $container;
         $this->_client= new \MongoDB\Client("mongodb://dbcat");
@@ -162,6 +163,33 @@ class CatalogController
             $rs->getBody()->write(json_encode($response));
             return $rs;
         }
+    }
 
+    /*
+     * Delete a sandwich
+     *
+     */
+    public function DeleteSandwich(Request $rq, Response $rs, $args){
+        if(isset($args['id'])){
+            $sandwich = $this->_db->sandwich->findOne(['ref'=>$args['id']]);
+            if($sandwich==null){
+                $rs=$rs->withStatus(404)->withHeader("Content-Type","application/json;charset=utf-8");
+                $response = ["type"=>"error","error"=>404,"message"=>"No Sandwich found with this ref : ".$args['id']];
+                $rs->getBody()->write(json_encode($response));
+                return $rs;
+            }
+            try {
+                $this->_db->sandwich->deleteOne(['ref'=>$args['id']]);
+                $rs = $rs->withStatus(204)->withHeader("Content-Type","application/json;charset=utf-8");
+                return $rs;
+            }
+            catch (Exception $ex){
+                $rs=$rs->withStatus(500)->withHeader("Content-Type","application/json;charset=utf-8");
+                $response = ["type"=>"error","error"=>500,"message"=>$ex->getMessage()];
+                $rs->getBody()->write(json_encode($response));
+                return $rs;
+            }
+
+        }
     }
 }

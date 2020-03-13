@@ -1,22 +1,28 @@
 <?php
 
+use lbs\catalogue\Middlewares\AuthorizationMiddleware;
+use lbs\catalogue\Middlewares\CorsMiddleware;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use lbs\catalogue\Controller\CatalogController as CatalogController;
+
 require_once "../src/vendor/autoload.php";
-//Slim Container configuration
-$config=['settings' => [
-    'displayErrorDetails' => true
-]];
+
+// Require settings files
+$globalSettings = require_once "../src/conf/GlobalSettings.php";
 $errorHandlers = require_once "../src/conf/errorHandlers.php";
-$containerConfig = array_merge($config,$errorHandlers);
+
+//Slim Container configuration
+$containerConfig = array_merge($globalSettings,$errorHandlers);
 $container = new \Slim\Container($containerConfig);
 $app = new \Slim\App($container);
+
+
 //CORS Middleware
 $app->options('/{routes:.+}', function ($request, $response, $args) {
     return $response;
 });
-$app->add(new \lbs\catalogue\Middlewares\CorsMiddleware($container));
+$app->add(new CorsMiddleware($container));
 
 //Routes
 
@@ -35,16 +41,20 @@ $app->get('/sandwiches[/]',function ($rq,$rs,$args) use($container){
     return (new CatalogController($container))->GetAllSandwiches($rq,$rs,$args);
 });
 
-//Get sandwich by Reg
+//Get sandwich by Ref
 $app->get('/sandwiches/{id}[/]',function ($rq,$rs,$args) use($container){
     return (new CatalogController($container))->GetSandwichByRef($rq,$rs,$args);
 });
 
+// Get sandwiches by category
 $app->get('/categories/{id}/sandwiches[/]',function ($rq,$rs,$args) use($container){
     return (new CatalogController($container))->GetSandwichesByCategorie($rq,$rs,$args);
 });
 
-
+//Delete Sandwich
+$app->delete('/sandwiches/{id}[/]',function ($rq,$rs,$args) use($container){
+    return (new CatalogController($container))->DeleteSandwich($rq,$rs,$args);
+})->add(new AuthorizationMiddleware());
 
 
 $app->run();
