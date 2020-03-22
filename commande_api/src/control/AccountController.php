@@ -37,8 +37,9 @@ class AccountController
         $client->mail_client=filter_var($body['email'],FILTER_SANITIZE_EMAIL);
         $client->passwd=password_hash($body['password'],PASSWORD_DEFAULT);
         try {
+            //TODO : add location header
             $client->save();
-            $rs=$rs->withStatus(200)->withHeader("Content-Type","application/json;charset=utf-8");
+            $rs=$rs->withStatus(201)->withHeader("Content-Type","application/json;charset=utf-8");
             $rs->getBody()->write(json_encode($client));
             return $rs;
         }catch (\Exception $ex){

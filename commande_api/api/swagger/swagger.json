@@ -1,0 +1,83 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Commande",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "http://api.commande.local:19080",
+            "description": "api commande"
+        },
+        {
+            "url": "http://api.commande.local:19080",
+            "description": "api commande"
+        }
+    ],
+    "paths": {
+        "/index.php/orders": {
+            "get": {
+                "operationId": "lbs\\command\\control\\OrderController::GetOrders",
+                "responses": {
+                    "200": {
+                        "description": "Get all the orders",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Order"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/orders/{id}": {
+            "get": {
+                "operationId": "lbs\\command\\control\\OrderController::GetOrder",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "order id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get all the orders",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Order"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Order": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "parameters": {}
+    }
+}

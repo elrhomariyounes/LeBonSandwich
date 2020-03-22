@@ -142,7 +142,7 @@ class OrderController
             try {
                 //Update the order
                 $order = Order::where('id','=',$args['id'])->firstOrFail();
-                $order->status = filter_var($body['state'],FILTER_VALIDATE_INT);
+                $order->status = filter_var($body['state'],FILTER_SANITIZE_NUMBER_INT);
                 $order->save();
                 //Response object
                 $responseObject = [

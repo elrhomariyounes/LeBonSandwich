@@ -9,7 +9,9 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
 use lbs\command\model\Client;
+use OpenApi\Annotations as OA;
 use GuzzleHttp\Client as GClient;
+
 class OrderController{
     private $_container;
     private $client;
@@ -22,9 +24,18 @@ class OrderController{
         ]);
     }
 
-    /*
-     * Get all the orders
-     *
+    /**
+     * @OA\Get(
+     *     path="/index.php/orders",
+     *     @OA\Response(
+     *          response="200",
+     *          description="Get all the orders",
+     *          @OA\JsonContent(
+     *              type="array",
+     *              @OA\Items(ref="#/components/schemas/Order")
+     *          )
+     *      )
+     * )
      */
     public function GetOrders(Request $rq, Response $rs, $args)
   {
@@ -50,10 +61,23 @@ class OrderController{
       return $rs;
   }
 
-  /*
-   * Get Order by id
-   *
-   */
+    /**
+     * @OA\Get(
+     *     path="/index.php/orders/{id}",
+     *     @OA\Parameter(
+     *          name="id",
+     *          in="path",
+     *          description="order id",
+     *          required=true,
+     *          @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *          response="200",
+     *          description="Get all the orders",
+     *          @OA\JsonContent(ref="#/components/schemas/Order")
+     *      )
+     * )
+     */
     public function GetOrder(Request $rq, Response $rs, $args){
         //Test if is a POST Method then Not Allowed
         if($rq->getMethod()==="POST"){
@@ -156,7 +180,7 @@ class OrderController{
                 //Update cumul_achat client and update client id in Order
                 if(isset($parsedBody['clientId'])){
                     $order = Order::where('token','=',$token)->first();
-                    $order->client_id=filter_var($parsedBody['clientId'], FILTER_VALIDATE_INT);
+                    $order->client_id=filter_var($parsedBody['clientId'], FILTER_SANITIZE_NUMBER_INT);
                     $order->saveOrFail();
                     $client = Client::where('id','=',$parsedBody['clientId'])->first();
                     $client->cumul_achats+=$montant;
@@ -405,11 +429,11 @@ class OrderController{
                     "count"=>count($orders),
                     "orders"=>$orders
                 ];
-                $rs=$rs->withStatus(401)->withHeader('Content-type', 'application/json');
+                $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
                 $rs->getBody()->write(json_encode($responseObject));
                 return $rs;
             }
-            $rs=$rs->withStatus(200)->withHeader('Content-type', 'application/json');
+            $rs=$rs->withStatus(404)->withHeader('Content-type', 'application/json');
             $rs->getBody()->write(json_encode(["message"=>"No orders found for the client : ".$args['id']]));
             return $rs;
         }
